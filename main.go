@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+
 	config, err := utils.LoadConfig(".")
 	if err != nil {
 		log.Fatal("cannot load config", err)
@@ -19,6 +20,8 @@ func main() {
 	dbDriver := config.DBDriver
 	dbSource := config.DBSource
 	serverAddress := config.ServerAddress
+	accessTokenSymmetricKey := config.AccessTokenSymmetricKey
+	accessTokenDuration := config.AccessTokenDuration
 
 	conn_url, _ := url.Parse(dbSource)
 	conn_url.RawQuery = "sslmode=verify-ca;sslrootcert=ca.pem"
@@ -28,7 +31,10 @@ func main() {
 		log.Fatal("cannot connect to db", err)
 	}
 	store := db.NewStore(conn)
-	server := api.NewServer(store)
+	server, err := api.NewServer(store, accessTokenSymmetricKey, accessTokenDuration)
+	if err != nil {
+		log.Fatal("cannot create server", err)
+	}
 
 	err = server.Start(serverAddress)
 	if err != nil {
