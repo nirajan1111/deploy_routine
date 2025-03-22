@@ -37,13 +37,50 @@ func NewServer(store *db.Store, accessTokenSymmetricKey string, accessTokenDurat
 	server.router = router
 	return server, nil
 }
+
 func (server *Server) setRouter(router *gin.Engine) {
 	router.POST("/users/login", server.loginUser)
-
 	router.POST("/users", server.createUser)
 	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
 	authRoutes.GET("/users/:email", server.getUser)
 	authRoutes.GET("/users", server.listUsers)
+
+	authRoutes.POST("/teachers", server.addTeacher)
+	authRoutes.GET("/teachers/:email", server.getTeacher)
+	authRoutes.GET("/teachers", server.getAllTeachers)
+	authRoutes.PUT("/teachers/:email", server.updateTeacher)
+	authRoutes.DELETE("/teachers/:email", server.deleteTeacher)
+	authRoutes.GET("/get_me_teacher", server.getMe)
+
+	authRoutes.POST("/rooms", server.addRoom)
+	authRoutes.GET("/rooms/:room_code", server.getRoom)
+	router.GET("/rooms", server.listRooms)
+	authRoutes.PUT("/rooms/:id", server.updateRoom)
+	authRoutes.DELETE("/rooms/:id", server.deleteRoom)
+
+	authRoutes.POST("/subjects", server.createSubject)
+	authRoutes.GET("/subjects/:id", server.getSubject)
+	router.GET("/subjects", server.listSubjects)
+	authRoutes.PUT("/subjects/:id", server.updateSubject)
+	authRoutes.DELETE("/subjects/:id", server.deleteSubject)
+	authRoutes.POST("/subject/:id/:email", server.assignTeacherToSubject)
+	authRoutes.GET("/subject/remove/:id/:email", server.removeTeacherFromSubject)
+
+	authRoutes.POST("/student-sections", server.createStudentSection)
+	authRoutes.GET("/student-sections/:id", server.getStudentSection)
+	router.GET("/student-sections", server.listStudentSections)
+	authRoutes.PUT("/student-sections/:id", server.updateStudentSection)
+	authRoutes.DELETE("/student-sections/:id", server.deleteStudentSection)
+	authRoutes.GET("/student-sections/:id/students", server.getStudentsInSection)
+
+	router.GET("/schedules/room/:room_id", server.getSchedulesByRoom)
+	router.GET("/schedules/group/:group_id", server.getSchedulesByGroup)
+
+	authRoutes.POST("/schedules", server.createSchedule)
+	authRoutes.GET("/schedules/teacher/:email", server.getSchedulesByTeacher)
+
+	authRoutes.PUT("/schedules/:id", server.updateSchedule)
+	authRoutes.DELETE("/schedules/:id", server.deleteSchedule)
 }
 
 func (server *Server) Start(address string) error {
