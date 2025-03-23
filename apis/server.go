@@ -50,7 +50,7 @@ func NewServer(store *db.Store, accessTokenSymmetricKey string, accessTokenDurat
 func (server *Server) setRouter(router *gin.Engine) {
 	router.POST("/users/login", server.loginUser)
 	router.POST("/users", server.createUser)
-	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
+	authRoutes := router.Group("/").Use(AuthMiddleware(server.tokenMaker))
 	authRoutes.GET("/users/:email", server.getUser)
 	authRoutes.GET("/users", server.listUsers)
 
