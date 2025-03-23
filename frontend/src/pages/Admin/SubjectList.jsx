@@ -47,7 +47,7 @@ const SubjectList = () => {
 
     const fetchTeachers = async () => {
         try {
-            const response = await axios.get(`${BACKEND_URL}/teachers`, {
+            const response = await axios.get(`${BACKEND_URL}/teachers?limit=20`, {
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`,
@@ -113,7 +113,7 @@ const SubjectList = () => {
                 });
                 toast.success('Subject updated successfully');
             } else {
-                await axios.post('${BACKEND_URL}/subjects', subjectData, {
+                await axios.post(`${BACKEND_URL}/subjects`, subjectData, {
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${localStorage.getItem('token')}`,

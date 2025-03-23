@@ -7,7 +7,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import RoutineTable from '../../components/routine/RoutineTable';
+import RoutineTable from '../../Components/routine/RoutineTable';
 import BACKEND_URL from './../../config';
 
 const RoomList = ({year}) => {

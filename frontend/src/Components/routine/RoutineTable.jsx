@@ -41,6 +41,8 @@ const StyledTableRow = styled(TableRow)(({ theme, isOdd }) => ({
 }));
 
 const RoutineTable = (props) => {
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+
  
   const today = new Date();
 
@@ -66,7 +68,6 @@ const nepaliDate = new NepaliDate(today);
     { start_time: '16:15', end_time: '17:55' },
     { start_time: '17:55', end_time: '19:35' },
   ];
-  const user = JSON.parse(localStorage.getItem('user') || '{}');
   const token = localStorage.getItem('token');
 
   const authHeader = { 
@@ -139,11 +140,10 @@ const nepaliDate = new NepaliDate(today);
   };
 
   const handleCellDoubleClick = (schedule, timeSlot, day, userGroup) => {
-    if(true){
+    if(user?.role === 'admin' && props?.userGroup){ 
       setSelectedSchedule(schedule);
       
       if (schedule) {
-        // For editing existing schedules
         setEditedSchedule({
           group_id: schedule.group_id || null,
           room_id: schedule.room_id || null,
@@ -217,6 +217,12 @@ const nepaliDate = new NepaliDate(today);
     <Box m={4}>
       <Typography variant="h5" align="center" gutterBottom>
         Routine Schedule for {props?.title}
+        {user?.role === 'admin' && props?.userGroup&&(
+          <h6 style={{
+            fontSize: '12px',
+          }}>Double click box to edit or add</h6>
+        )}
+      
       </Typography>
       <TableContainer component={Paper} elevation={4}>
         <Table>

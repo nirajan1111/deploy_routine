@@ -41,14 +41,7 @@ func main() {
 	accessTokenSymmetricKey := os.Getenv("ACCESS_TOKEN_SYMMETRIC_KEY")
 
 	// Parse duration from string
-	accessTokenDuration := 1500 * time.Minute
-	expiry := os.Getenv("ACCESS_TOKEN_EXPIRY")
-	if expiry != "" {
-		duration, err := time.ParseDuration(expiry)
-		if err == nil {
-			accessTokenDuration = duration
-		}
-	}
+	accessTokenDuration := 15000 * time.Minute
 
 	// Connect to database
 	conn_url, _ := url.Parse(dbSource)

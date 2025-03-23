@@ -4,7 +4,7 @@ import { FaEdit, FaTrash, FaPlus, FaSearch,FaCalendarAlt } from 'react-icons/fa'
 import TeacherForm from './TeacherForm';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import RoutineTable from '../../components/routine/RoutineTable';
+import RoutineTable from '../../Components/routine/RoutineTable';
 import Modal from '@mui/material/Modal';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -97,7 +97,7 @@ const TeacherList = ({ year }) => {
                     }
                 });
             } else {
-                await axios.post('${BACKEND_URL}/teachers', teacherData, {
+                await axios.post(`${BACKEND_URL}/teachers`, teacherData, {
                     headers: {
                         Authorization: `Bearer ${localStorage.getItem('token')}`,
                     }
@@ -232,7 +232,7 @@ const TeacherList = ({ year }) => {
                         Schedules for Group: {selectedTeacher?.name}
                     </Typography>
                     {selectedTeacher && (
-                        <RoutineTable teacherEmail={selectedTeacher.email} year={year} />
+                        <RoutineTable teacherEmail={selectedTeacher.email} year={year} title={selectedTeacher.name} />
                     )}
                     <div className="flex justify-end mt-4">
                         <button

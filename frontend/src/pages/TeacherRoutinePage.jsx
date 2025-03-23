@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { Navigate, Link } from 'react-router';
-import RoutineTable from '../components/routine/RoutineTable';
+import RoutineTable from '../Components/routine/RoutineTable';
 import {
     Box, Typography, Alert, Container,
     Paper, Button,

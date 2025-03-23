@@ -2,10 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { Typography, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSchedules } from '../store/routineSlice';
-import Layout from '../components/Layout';
-import RoutineTable from '../components/routine/RoutineTable';
+import Layout from '../Components/Layout';
+import RoutineTable from '../Components/routine/RoutineTable';
 import api from '../services/api';
-import { RoutineList } from '../components/routine';
+import { RoutineList } from '../Components/routine';
 import axios from 'axios';
 import BACKEND_URL from './../config';
 const RoomPage = () => {

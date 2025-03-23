@@ -68,7 +68,7 @@ const TeacherAssignModal = ({ subject, teachers, assignedTeachers, onAssign, onR
             <option value="">Select a teacher</option>
             {availableTeachers.map(teacher => (
               <option key={teacher.email} value={teacher.email}>
-              {teacher.designation}  {teacher.teacher_name} 
+              {teacher.designation}  {teacher.name} 
               </option>
             ))}
           </select>

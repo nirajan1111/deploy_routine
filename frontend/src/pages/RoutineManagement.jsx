@@ -1,8 +1,8 @@
 import React from 'react';
 import { Container, Box, Typography } from '@mui/material';
-import RoutineTable from '../components/routine/RoutineTable';
-import NaturalLanguageQuery from '../components/routine/NaturalLanguageQuery';
-import RoutineOptimizer from '../components/routine/RoutineOptimizer';
+import RoutineTable from '../Components/routine/RoutineTable';
+import NaturalLanguageQuery from '../Components/routine/NaturalLanguageQuery';
+import RoutineOptimizer from '../Components/routine/RoutineOptimizer';
 
 const RoutineManagement = () => {
   return (
