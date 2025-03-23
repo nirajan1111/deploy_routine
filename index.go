@@ -22,6 +22,7 @@ func main() {
 
 	// Print the value to verify it's loaded
 	key := os.Getenv("ACCESS_TOKEN_SYMMETRIC_KEY")
+
 	log.Printf("Key loaded: %s (length: %d)", key, len(key))
 
 	// Rest of your code using environment variables
@@ -33,7 +34,8 @@ func main() {
 	dbSource := os.Getenv("DB_SOURCE")
 	serverAddress := os.Getenv("SERVER_ADDRESS")
 	if serverAddress == "" {
-		serverAddress = "localhost:8080"
+		serverAddress = "0.0.0.0:8080"
+
 	}
 
 	accessTokenSymmetricKey := os.Getenv("ACCESS_TOKEN_SYMMETRIC_KEY")
