@@ -6,7 +6,7 @@ import (
 	"net/url"
 
 	_ "github.com/lib/pq"
-	"github.com/nirajan1111/routiney/api"
+	api "github.com/nirajan1111/routiney/apis"
 	db "github.com/nirajan1111/routiney/db/sqlc"
 	"github.com/nirajan1111/routiney/utils"
 )
