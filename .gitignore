@@ -2,3 +2,4 @@ app.env
 .env 
 Makefile
 ca.pem
+.vercel

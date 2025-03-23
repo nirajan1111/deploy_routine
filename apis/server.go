@@ -48,6 +48,9 @@ func NewServer(store *db.Store, accessTokenSymmetricKey string, accessTokenDurat
 }
 
 func (server *Server) setRouter(router *gin.Engine) {
+	router.GET("/ping", func(ctx *gin.Context) {
+		ctx.JSON(200, gin.H{"message": "pong"})
+	})
 	router.POST("/users/login", server.loginUser)
 	router.POST("/users", server.createUser)
 	authRoutes := router.Group("/").Use(AuthMiddleware(server.tokenMaker))
@@ -101,4 +104,8 @@ func (server *Server) Start(address string) error {
 
 func errorResponse(err error) gin.H {
 	return gin.H{"error": err.Error()}
+}
+
+func (server *Server) Router() *gin.Engine {
+	return server.router
 }

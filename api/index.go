@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"log"
 	"net/url"
+	"os"
+	"time"
 
 	_ "github.com/lib/pq"
 	api "github.com/nirajan1111/routiney/apis"
@@ -12,16 +14,21 @@ import (
 )
 
 func main() {
-
-	config, err := utils.LoadConfig(".")
+	_, err := utils.LoadConfig(".")
 	if err != nil {
 		log.Fatal("cannot load config", err)
 	}
-	dbDriver := config.DBDriver
-	dbSource := config.DBSource
-	serverAddress := config.ServerAddress
-	accessTokenSymmetricKey := config.AccessTokenSymmetricKey
-	accessTokenDuration := config.AccessTokenDuration
+	// dbDriver := config.DBDriver
+	// dbSource := config.DBSource
+	// serverAddress := config.ServerAddress
+	// accessTokenSymmetricKey := config.AccessTokenSymmetricKey
+	// accessTokenDuration := config.AccessTokenDuration
+	dbDriver := "postgres"
+	dbSource := os.Getenv("DB_SOURCE")
+	serverAddress := os.Getenv("SERVER_ADDRESS")
+	accessTokenSymmetricKey := os.Getenv("ACCESS_TOKEN_SYMMETRIC_KEY")
+
+	accessTokenDuration := 1500 * time.Minute
 
 	conn_url, _ := url.Parse(dbSource)
 	conn_url.RawQuery = "sslmode=verify-ca;sslrootcert=ca.pem"
