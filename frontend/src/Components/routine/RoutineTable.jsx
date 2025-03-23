@@ -14,10 +14,12 @@ import {
   Select,
   MenuItem,
 } from '@mui/material';
+import NepaliDate from 'nepali-date-converter';
 import { styled } from '@mui/system';
-import api from '../../services/api';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import axios from 'axios';
+import BACKEND_URL from './../../config';
 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
   fontSize: 14,
@@ -39,134 +41,173 @@ const StyledTableRow = styled(TableRow)(({ theme, isOdd }) => ({
 }));
 
 const RoutineTable = (props) => {
+ 
+  const today = new Date();
+
+const nepaliDate = new NepaliDate(today);
+
   const [schedules, setSchedules] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [editedSchedule, setEditedSchedule] = useState({
-    subject: null,
-    teacher: null,
-    room: null,
-    timeSlot: null,
-    userGroup: null,
-    day: null
-  });
+    group_id: null,
+    room_id: null,
+    subject_id: null,
+    teacher_email: null,
+    time_slot: null,
+    year: nepaliDate.getYear()
+  })
   const [teachers, setTeachers] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [rooms, setRooms] = useState([]);
 
   const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI'];
   const timeSlots = [
-    { start_time: '16:15:00', end_time: '17:55:00' },
-    { start_time: '17:55:00', end_time: '19:35:00' },
+    { start_time: '16:15', end_time: '17:55' },
+    { start_time: '17:55', end_time: '19:35' },
   ];
-  const user = JSON.parse(localStorage.getItem('user'));
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const token = localStorage.getItem('token');
+
+  const authHeader = { 
+    Authorization: `Bearer ${token}` 
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch schedules
+        let scheduleResponse;
         if (props?.userGroup) {
-          const scheduleResponse = await api.get(`schedules/?group=${props.userGroup}`);
-          setSchedules(scheduleResponse.data);
-        } else if (props?.roomNo) {
-          const scheduleResponse = await api.get(`schedules/?roomNo=${props.roomNo}`);
-          setSchedules(scheduleResponse.data);
-        } else if (props?.teacherEmail) {
-          const scheduleResponse = await api.get(`schedules/?email=${props.teacherEmail}`);
+          scheduleResponse = await axios.get(`${BACKEND_URL}/schedules/group/${props.userGroup}?year=${props.year}`,);
+        if (scheduleResponse.status === 200) {
           setSchedules(scheduleResponse.data);
         }
-        // Fetch subjects
-        const subjectResponse = await api.get("subjects");
+        } else if (props?.roomNo) {
+          scheduleResponse = await axios.get(`${BACKEND_URL}/schedules/room/${props.roomNo}?year=${props.year}`);
+          setSchedules(scheduleResponse.data);
+        } else if (props?.teacherEmail) {
+          scheduleResponse = await axios.get(`${BACKEND_URL}/schedules/teacher/${props.teacherEmail}?year=${props.year}`, {
+            headers: authHeader
+          });
+          setSchedules(scheduleResponse.data);
+        }
+        
+        const subjectResponse = await axios.get(`${BACKEND_URL}/subjects?limit=50&offset=0`, {
+          headers: authHeader
+        });
         setSubjects(subjectResponse.data);
 
-        // Fetch rooms
-        const roomResponse = await api.get('room');
+        // Get rooms
+        const roomResponse = await axios.get(`${BACKEND_URL}/rooms?limit=100&offset=01`);
         setRooms(roomResponse.data);
+        
       } catch (error) {
+        setSchedules([]);
         console.error('Error fetching data:', error);
         toast.error('Failed to fetch routine data');
       }
     };
 
     fetchData();
-  }, [props.userGroup, props.roomNo, props.teacherEmail]);
-
+  }, [props.userGroup, props.roomNo, props.teacherEmail, token]);
 
   const handleChange = (field, value) => {
     setEditedSchedule((prev) => ({ ...prev, [field]: value }));
-    if (field === 'subject') {
+    if (field === 'subject_id') {
       updateTeachersForSubject(value);
     }
   };
 
-  const updateTeachersForSubject = (subjectId) => {
-    console.log(subjectId)
-    const selectedSubject = subjects.find(subject => subject.id === subjectId);
-    console.log("Here are the selected subjects", selectedSubject)
-    if (selectedSubject && selectedSubject.teachers_details) {
-      setTeachers(selectedSubject.teachers_details);
-    } else {
+  const updateTeachersForSubject = async (subjectId) => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/subject/${subjectId}/teachers`, {
+        headers: authHeader
+      });
+      setTeachers(response.data || []);
+    } catch (error) {
+      console.error('Error fetching teachers for subject:', error);
       setTeachers([]);
     }
   };
 
   const getScheduleForSlot = (day, timeSlot) => {
-    return schedules.find(
+    if(!schedules) return null;
+    return schedules?.find(
       (schedule) =>
-        schedule.time_slot_detail.day === day &&
-        schedule.time_slot_detail.start_time === timeSlot.start_time &&
-        schedule.time_slot_detail.end_time === timeSlot.end_time
+       schedule.time_slot === day + '-' + timeSlot.start_time + '-' + timeSlot.end_time
     );
   };
 
   const handleCellDoubleClick = (schedule, timeSlot, day, userGroup) => {
-    if (user.is_superuser) {
+    if(true){
       setSelectedSchedule(schedule);
+      
       if (schedule) {
+        // For editing existing schedules
         setEditedSchedule({
-          subject: schedule.subject_detail?.id || null,
-          teacher: schedule.teacher_detail?.id || null,
-          room: schedule.room_detail?.id || null,
+          group_id: schedule.group_id || null,
+          room_id: schedule.room_id || null,
+          subject_id: schedule.subject_id || null,
+          teacher_email: schedule.teacher_email || null,
+          time_slot: schedule.time_slot || null,
+          year: nepaliDate.getYear()
         });
 
-        if (schedule.subject_detail?.id) {
-          updateTeachersForSubject(schedule.subject_detail.id);
+        if (schedule.subject_id) {
+          updateTeachersForSubject(schedule.subject_id);
         }
       } else {
-        setEditedSchedule({ subject: null, teacher: null, room: null, day: day, timeSlot: timeSlot, group: userGroup });
-
+        setEditedSchedule({
+          group_id: userGroup || null,
+          room_id: props.roomNo || null, 
+          subject_id: null,
+          teacher_email: props.teacherEmail || null,
+          time_slot: day + '-' + timeSlot.start_time + '-' + timeSlot.end_time,
+          year: nepaliDate.getYear()
+        });
         setTeachers([]);
       }
+      
       setOpenModal(true);
     }
   };
 
-
-
   const handleSave = async () => {
     try {
       if (selectedSchedule) {
-        const response = await api.put(`schedules/${selectedSchedule.id}/`, editedSchedule);
+        await axios.put(`${BACKEND_URL}/schedules/${selectedSchedule.id}`, editedSchedule, {
+          headers: authHeader
+        });
         toast.success('Schedule updated successfully!');
+        
         setSchedules((prevSchedules) =>
           prevSchedules.map((sched) =>
             sched.id === selectedSchedule.id ? { ...sched, ...editedSchedule } : sched
           )
         );
       } else {
-        const response = await api.post(`schedules/create/`, editedSchedule);
+        await axios.post(`${BACKEND_URL}/schedules`, editedSchedule, {
+          headers: authHeader
+        });
         toast.success('Schedule created successfully!');
+        
+        let updatedSchedules;
         if (props?.userGroup) {
-          const scheduleResponse = await api.get(`schedules/?group=${props.userGroup}`);
-          setSchedules(scheduleResponse.data);
+          updatedSchedules = await axios.get(`${BACKEND_URL}/schedules/group/${props.userGroup}`);
         } else if (props?.roomNo) {
-          const scheduleResponse = await api.get(`schedules/?roomNo=${props.roomNo}`);
-          setSchedules(scheduleResponse.data);
+          updatedSchedules = await axios.get(`${BACKEND_URL}/schedules/room/${props.roomNo}`);
+        } else if (props?.teacherEmail) {
+          updatedSchedules = await axios.get(`${BACKEND_URL}/schedules/teacher/${props.teacherEmail}`, {
+            headers: authHeader
+          });
+        }
+        
+        if (updatedSchedules) {
+          setSchedules(updatedSchedules.data);
         }
       }
-      setOpenModal(false); // Close the modal after successful operation
+      setOpenModal(false); 
     } catch (error) {
-      // Display the error message from the backend
       const errorMessage = error.response?.data?.error || 'An error occurred while saving the schedule';
       toast.error(errorMessage);
     }
@@ -175,7 +216,7 @@ const RoutineTable = (props) => {
   return (
     <Box m={4}>
       <Typography variant="h5" align="center" gutterBottom>
-        Routine Schedule
+        Routine Schedule for {props?.title}
       </Typography>
       <TableContainer component={Paper} elevation={4}>
         <Table>
@@ -194,8 +235,8 @@ const RoutineTable = (props) => {
               <StyledTableRow key={day} isOdd={rowIndex % 2 !== 0}>
                 <StyledTableCell>{day}</StyledTableCell>
                 {timeSlots.map((timeSlot, colIndex) => {
+
                   const schedule = getScheduleForSlot(day, timeSlot);
-                  console.log(schedule)
                   return (
                     <StyledTableCell
                       key={colIndex}
@@ -204,13 +245,13 @@ const RoutineTable = (props) => {
                       {schedule ? (
                         <Box>
                           <Typography variant="body2" fontWeight="bold">
-                            {schedule.subject_detail.name}
+                            {schedule.subject_name}
                           </Typography>
                           <Typography variant="body2" color="text.secondary">
-                            {schedule.teacher_detail.designation} Professor {schedule.teacher_detail.name}
+                          {schedule.teacher_designation}  {schedule.teacher_name}
                           </Typography>
                           <Typography variant="body2" fontWeight="bold">
-                            Room.no{" "}{schedule.room_detail.room_code}
+                            Room: {schedule.room_code}
                           </Typography>
                         </Box>
                       ) : (
@@ -227,33 +268,60 @@ const RoutineTable = (props) => {
 
       <Modal open={openModal} onClose={() => setOpenModal(false)}>
         <Box sx={{ p: 4, backgroundColor: 'white', width: 400, margin: 'auto', mt: 10, borderRadius: 2 }}>
-          <Typography variant="h6" gutterBottom>Edit Schedule</Typography>
-          <Select value={editedSchedule.subject} fullWidth onChange={(e) => handleChange('subject', e.target.value)}>
+          <Typography variant="h6" gutterBottom>
+            {selectedSchedule ? 'Edit Schedule' : 'Create New Schedule'}
+          </Typography>
+          
+          <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>Subject</Typography>
+          <Select 
+            value={editedSchedule.subject_id} 
+            fullWidth 
+            onChange={(e) => handleChange('subject_id', e.target.value)}
+          >
+            <MenuItem value={null}>Select Subject</MenuItem>
             {subjects.map((subject) => (
               <MenuItem key={subject.id} value={subject.id}>
                 {subject.name}
               </MenuItem>
             ))}
           </Select>
-          <Select value={editedSchedule.teacher} fullWidth onChange={(e) => handleChange('teacher', e.target.value)}>
-            {teachers.length > 0 && (teachers.map((teacher) => (
-              <MenuItem key={teacher.email} value={teacher.email}>
-                {teacher.name}
+          
+          <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>Teacher</Typography>
+          <Select 
+            value={editedSchedule.teacher_email} 
+            fullWidth 
+            onChange={(e) => handleChange('teacher_email', e.target.value)}
+          >
+            <MenuItem value={null}>Select Teacher</MenuItem>
+            {teachers.map((teacher) => (
+              <MenuItem key={teacher.teacher_email} value={teacher.teacher_email}>
+                {teacher.teacher_name}
               </MenuItem>
-            )))}
+            ))}
           </Select>
-          <Select value={editedSchedule.room} fullWidth onChange={(e) => handleChange('room', e.target.value)}>
-            {rooms.length > 0 && (
-              rooms.map((room) =>
-
-                <MenuItem key={room.id} value={room.id}>
-                  {room.room_code}
-                </MenuItem>
-              ))
-            }
+          
+          <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>Room</Typography>
+          <Select 
+            value={editedSchedule.room_id} 
+            fullWidth 
+            onChange={(e) => handleChange('room_id', e.target.value)}
+          >
+            <MenuItem value={null}>Select Room</MenuItem>
+            {rooms.map((room) => (
+              <MenuItem key={room.id} value={room.id}>
+                {room.room_code}
+              </MenuItem>
+            ))}
           </Select>
-          <Button variant="contained" color="primary" fullWidth onClick={handleSave} sx={{ mt: 2 }}>
-            Save Changes
+          
+          <Button 
+            variant="contained" 
+            color="primary" 
+            fullWidth 
+            onClick={handleSave} 
+            sx={{ mt: 3 }}
+          >
+            {selectedSchedule ? 'Update Schedule' : 'Create Schedule'}
           </Button>
         </Box>
       </Modal>

@@ -1,11 +1,11 @@
 -- name: CreateSubject :one
 INSERT INTO subject (
-  id,
+
   subject_code,
   name,
   department
 ) VALUES (
-  $1, $2, $3, $4
+   $1, $2, $3
 ) RETURNING *;
 
 -- name: GetSubject :one
@@ -54,6 +54,13 @@ INSERT INTO subject_teachers (
 ) VALUES (
   $1, $2
 );
+-- name: GetAssignedTeachers :many
+SELECT st.subject_id, st.teacher_email, t.name AS teacher_name , t.designation , t.department 
+FROM subject_teachers st
+JOIN teacher t ON st.teacher_email = t.email
+WHERE st.subject_id = $1
+ORDER BY st.subject_id, st.teacher_email;
+
 
 -- name: RemoveTeacherFromSubject :exec
 DELETE FROM subject_teachers

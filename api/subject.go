@@ -34,10 +34,9 @@ type listSubjectsRequest struct {
 }
 
 type updateSubjectRequest struct {
-	ID          int64  `uri:"id" binding:"required,min=1"`
-	SubjectCode string `json:"subject_code"`
-	Name        string `json:"name"`
-	Department  string `json:"department"`
+	SubjectCode string `json:"subject_code" binding:"required"`
+	Name        string `json:"name" binding:"required"`
+	Department  string `json:"department" binding:"required"`
 }
 
 type deleteSubjectRequest struct {
@@ -71,14 +70,7 @@ func (server *Server) createSubject(ctx *gin.Context) {
 		return
 	}
 
-	maxID, err := server.store.CountSubjects(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
 	arg := db.CreateSubjectParams{
-		ID:          maxID + 1,
 		SubjectCode: StringToSQLNullString(req.SubjectCode),
 		Name:        StringToSQLNullString(req.Name),
 		Department:  StringToSQLNullString(req.Department),
@@ -181,7 +173,7 @@ func (server *Server) updateSubject(ctx *gin.Context) {
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(fmt.Errorf("subject with not found", subject.ID)))
+			ctx.JSON(http.StatusNotFound, errorResponse(fmt.Errorf("subject with not found")))
 			return
 		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
@@ -189,7 +181,7 @@ func (server *Server) updateSubject(ctx *gin.Context) {
 	}
 
 	arg := db.UpdateSubjectParams{
-		ID:          uri.ID,
+		ID:          subject.ID,
 		SubjectCode: StringToSQLNullString(req.SubjectCode),
 		Name:        StringToSQLNullString(req.Name),
 		Department:  StringToSQLNullString(req.Department),
@@ -304,4 +296,51 @@ func (server *Server) removeTeacherFromSubject(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{"message": "Teacher removed from subject successfully"})
+}
+
+type assignedTeacherResponse struct {
+	SubjectID          int64  `json:"subject_id"`
+	TeacherEmail       string `json:"teacher_email"`
+	TeacherName        string `json:"teacher_name"`
+	TeacherDesignation string `json:"teacher_designation"`
+}
+
+func (server *Server) getAssignedTeacher(ctx *gin.Context) {
+	subjectID, err := strconv.ParseInt(ctx.Param("id"), 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
+	}
+
+	adminStatus, err := checkAdmin(ctx, "admin")
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+	if !adminStatus {
+		ctx.JSON(http.StatusForbidden, errorResponse(fmt.Errorf("not authorized to view assigned teachers")))
+		return
+	}
+
+	assignedTeacher, err := server.store.GetAssignedTeachers(ctx, subjectID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+	if len(assignedTeacher) == 0 {
+		ctx.JSON(http.StatusNotFound, errorResponse(fmt.Errorf("no assigned teachers found")))
+		return
+	}
+	var teacherResponses []assignedTeacherResponse
+	for _, teacher := range assignedTeacher {
+		teacherResponse := assignedTeacherResponse{
+			SubjectID:          teacher.SubjectID,
+			TeacherEmail:       teacher.TeacherEmail,
+			TeacherName:        SQLNullStringToString(teacher.TeacherName),
+			TeacherDesignation: SQLNullStringToString(teacher.Designation),
+		}
+		teacherResponses = append(teacherResponses, teacherResponse)
+	}
+
+	ctx.JSON(http.StatusOK, teacherResponses)
 }

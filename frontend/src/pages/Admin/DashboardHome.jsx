@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { FaUsers, FaUserGraduate, FaDoorOpen, FaCalendarAlt } from 'react-icons/fa';
+import BACKEND_URL from './../../config';
 
 const DashboardHome = () => {
   const [stats, setStats] = useState({
@@ -17,7 +18,7 @@ const DashboardHome = () => {
     const fetchStats = async () => {
       try {
         // In a real app, you would fetch these from your API
-        // const teachersResponse = await axios.get('http://localhost:8080/teachers/count');
+        // const teachersResponse = await axios.get('${BACKEND_URL}/teachers/count');
         // For now, we'll use mock data
         setTimeout(() => {
           setStats({

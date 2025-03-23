@@ -1,13 +1,12 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = '${BACKEND_URL}';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',    
   },
-  withCredentials: true,
 });
 
 api.interceptors.request.use(
@@ -30,16 +29,26 @@ api.interceptors.request.use(
 );
 
 api.interceptors.response.use(
-  (response) => {
-    console.log('API Response:', response.data);
-    return response;
-  },
-  (error) => {
-    console.error('API Response Error:', error.response || error);
-    if (error.response?.status === 401) {
+  response => response,
+  error => {
+    const originalRequest = error.config;
+    
+    // Check if the error is due to an expired token
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      error.response.data &&
+      error.response.data.code === 'TOKEN_EXPIRED'
+    ) {
+      // Clear user data from localStorage
+      localStorage.removeItem('token');
       localStorage.removeItem('user');
+      
+      // Redirect to login page
       window.location.href = '/login';
+      return Promise.reject(error);
     }
+    
     return Promise.reject(error);
   }
 );

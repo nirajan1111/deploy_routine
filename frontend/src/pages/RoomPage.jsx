@@ -7,6 +7,7 @@ import RoutineTable from '../components/routine/RoutineTable';
 import api from '../services/api';
 import { RoutineList } from '../components/routine';
 import axios from 'axios';
+import BACKEND_URL from './../config';
 const RoomPage = () => {
   const dispatch = useDispatch();
   const userString = localStorage.getItem('user');
@@ -26,7 +27,7 @@ const RoomPage = () => {
   
   const fetchRoom =async ()=>{
     try {
-        const response =await axios.get('http://localhost:8080/rooms?limit=10',{
+        const response =await axios.get(`${BACKEND_URL}/rooms?limit=10`,{
             headers:{
               "Content-Type":"application/json",
             }

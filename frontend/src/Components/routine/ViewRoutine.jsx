@@ -21,6 +21,7 @@ import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import RoutineTable from './RoutineTable';
+import BACKEND_URL from './../../config';
 
 const ViewRoutine = () => {
   const { type, id } = useParams();
@@ -110,7 +111,7 @@ const ViewRoutine = () => {
   const getTitle = () => {
     if (type === 'rooms') return `Room ${roomInfo?.room_code} Schedule`;
     if (type === 'group' && groupInfo) {
-      return `${groupInfo?.name} (${groupInfo?.year_enrolled} - Section ${groupInfo?.section}) Schedule`;
+      return `${groupInfo?.name} (${groupInfo?.year_enrolled}) Schedule`;
     }
     return 'View Routine';
   };
@@ -244,8 +245,8 @@ const ViewRoutine = () => {
               }
             }}
           >
-            {type === 'rooms' && <RoutineTable roomNo={id} />}
-            {type === 'group' && <RoutineTable userGroup={id} />}
+            {type === 'rooms' && <RoutineTable roomNo={id} year={2081} title={getTitle()}/>}
+            {type === 'group' && <RoutineTable userGroup={id} year={2081} title={getTitle()}/>}
           </Paper>
         </Box>
       </Container>

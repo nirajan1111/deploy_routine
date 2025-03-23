@@ -66,7 +66,7 @@ const RoomForm = ({ room, onSubmit, onCancel }) => {
               name="room_code"
               value={formData.room_code}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${errors.room_code ? 'border-red-500' : 'border-gray-300'}`}
+              className={`w-full bg-white  px-3 py-2 border rounded-md ${errors.room_code ? 'border-red-500' : 'border-gray-300'}`}
               placeholder="e.g., A101"
             />
             {errors.room_code && <p className="mt-1 text-sm text-red-500">{errors.room_code}</p>}
@@ -81,7 +81,7 @@ const RoomForm = ({ room, onSubmit, onCancel }) => {
               name="block_no"
               value={formData.block_no}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${errors.block_no ? 'border-red-500' : 'border-gray-300'}`}
+              className={`w-full bg-white  px-3 py-2 border rounded-md ${errors.block_no ? 'border-red-500' : 'border-gray-300'}`}
               placeholder="e.g., A"
             />
             {errors.block_no && <p className="mt-1 text-sm text-red-500">{errors.block_no}</p>}
@@ -97,7 +97,7 @@ const RoomForm = ({ room, onSubmit, onCancel }) => {
               min="1"
               value={formData.floor_no}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${errors.floor_no ? 'border-red-500' : 'border-gray-300'}`}
+              className={`w-full bg-white  px-3 py-2 border rounded-md ${errors.floor_no ? 'border-red-500' : 'border-gray-300'}`}
             />
             {errors.floor_no && <p className="mt-1 text-sm text-red-500">{errors.floor_no}</p>}
           </div>
@@ -110,16 +110,11 @@ const RoomForm = ({ room, onSubmit, onCancel }) => {
               name="department"
               value={formData.department}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${errors.department ? 'border-red-500' : 'border-gray-300'}`}
+              className={`w-full bg-white  px-3 py-2 border rounded-md ${errors.department ? 'border-red-500' : 'border-gray-300'}`}
             >
               <option value="">Select Department</option>
-              <option value="Computer Science">Computer Science</option>
-              <option value="Mathematics">Mathematics</option>
-              <option value="Physics">Physics</option>
-              <option value="Chemistry">Chemistry</option>
-              <option value="Biology">Biology</option>
-              <option value="Engineering">Engineering</option>
-              <option value="Arts">Arts</option>
+              <option value="DOECE">Department of Electronics and Computer Engineering</option>
+          
             </select>
             {errors.department && <p className="mt-1 text-sm text-red-500">{errors.department}</p>}
           </div>
@@ -132,9 +127,9 @@ const RoomForm = ({ room, onSubmit, onCancel }) => {
               name="screen_available"
               checked={formData.screen_available}
               onChange={handleChange}
-              className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+              className="h-4 w-4 bg-white  text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
             />
-            <span className="ml-2 text-sm text-gray-700">Screen Available</span>
+            <span className="ml-2 bg-white  text-sm text-gray-700">Screen Available</span>
           </label>
         </div>
 

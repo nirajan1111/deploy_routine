@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	db "github.com/nirajan1111/routiney/db/sqlc"
 	"github.com/nirajan1111/routiney/token"
@@ -18,7 +19,7 @@ type Server struct {
 
 func NewServer(store *db.Store, accessTokenSymmetricKey string, accessTokenDuration time.Duration) (*Server, error) {
 	if accessTokenDuration <= 0 {
-		accessTokenDuration = 15 * time.Minute
+		accessTokenDuration = 100 * time.Minute
 	}
 
 	tokenMaker, err := token.NewPasetoMaker([]byte(accessTokenSymmetricKey))
@@ -32,6 +33,14 @@ func NewServer(store *db.Store, accessTokenSymmetricKey string, accessTokenDurat
 		accessTokenDuration: accessTokenDuration,
 	}
 	router := gin.Default()
+	router.Use(cors.New(cors.Config{
+		AllowAllOrigins:  true,
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           12 * time.Hour,
+	}))
 	server.setRouter(router)
 
 	server.router = router
@@ -64,6 +73,7 @@ func (server *Server) setRouter(router *gin.Engine) {
 	authRoutes.PUT("/subjects/:id", server.updateSubject)
 	authRoutes.DELETE("/subjects/:id", server.deleteSubject)
 	authRoutes.POST("/subject/:id/:email", server.assignTeacherToSubject)
+	authRoutes.GET("/subject/:id/teachers", server.getAssignedTeacher)
 	authRoutes.GET("/subject/remove/:id/:email", server.removeTeacherFromSubject)
 
 	authRoutes.POST("/student-sections", server.createStudentSection)
@@ -81,6 +91,8 @@ func (server *Server) setRouter(router *gin.Engine) {
 
 	authRoutes.PUT("/schedules/:id", server.updateSchedule)
 	authRoutes.DELETE("/schedules/:id", server.deleteSchedule)
+
+	router.GET("/years/schedules", server.getAvailableYears)
 }
 
 func (server *Server) Start(address string) error {

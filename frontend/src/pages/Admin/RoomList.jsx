@@ -1,14 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { FaEdit, FaTrash, FaPlus, FaSearch } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPlus, FaSearch, FaCalendarAlt } from 'react-icons/fa';
 import RoomForm from './RoomForm';
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import Modal from '@mui/material/Modal';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import RoutineTable from '../../components/routine/RoutineTable';
+import BACKEND_URL from './../../config';
 
-const RoomList = () => {
+const RoomList = ({year}) => {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [currentRoom, setCurrentRoom] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState(null);
 
   useEffect(() => {
     fetchRooms();
@@ -17,16 +26,16 @@ const RoomList = () => {
   const fetchRooms = async () => {
     setLoading(true);
     try {
-      const response = await axios.get('http://localhost:8080/rooms?limit=100&offset=0');
+      const response = await axios.get(`${BACKEND_URL}/rooms?limit=100&offset=0`, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       setRooms(response.data || []);
     } catch (error) {
+      toast.error('Failed to fetch rooms. Please try again.');
       console.error('Error fetching rooms:', error);
-      // Use mock data for demonstration
-      setRooms([
-        { id: 1, room_code: 'A101', block_no: 'A', floor_no: 1, screen_available: true, department: 'Computer Science' },
-        { id: 2, room_code: 'B203', block_no: 'B', floor_no: 2, screen_available: false, department: 'Mathematics' },
-        { id: 3, room_code: 'C305', block_no: 'C', floor_no: 3, screen_available: true, department: 'Physics' },
-      ]);
+      setRooms([]);
     } finally {
       setLoading(false);
     }
@@ -40,11 +49,16 @@ const RoomList = () => {
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this room?')) {
       try {
-        await axios.delete(`http://localhost:8080/rooms/${id}`);
-        setRooms(rooms.filter(r => r.id !== id));
+        await axios.delete(`${BACKEND_URL}/rooms/${id}`, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        toast.success('Room deleted successfully');
+        fetchRooms();
       } catch (error) {
+        toast.error('Failed to delete room. Please try again.');
         console.error('Error deleting room:', error);
-        alert('Failed to delete room. Please try again.');
       }
     }
   };
@@ -52,17 +66,32 @@ const RoomList = () => {
   const handleFormSubmit = async (roomData) => {
     try {
       if (currentRoom) {
-        await axios.put(`http://localhost:8080/rooms/${currentRoom.id}`, roomData);
+        await axios.put(`${BACKEND_URL}/rooms/${currentRoom.id}`, roomData, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        toast.success('Room updated successfully');
       } else {
-        await axios.post('http://localhost:8080/rooms', roomData);
+        await axios.post('${BACKEND_URL}/rooms', roomData, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        toast.success('Room added successfully');
       }
       setShowForm(false);
       setCurrentRoom(null);
       fetchRooms();
     } catch (error) {
+      toast.error('Failed to save room. Please try again.');
       console.error('Error saving room:', error);
-      alert('Failed to save room. Please try again.');
     }
+  };
+
+  const handleShowSchedules = (room) => {
+    setSelectedRoom(room);
+    setShowScheduleModal(true);
   };
 
   const filteredRooms = rooms.filter(room =>
@@ -70,6 +99,21 @@ const RoomList = () => {
     room.block_no?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     room.department?.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const modalStyle = {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: '90%',
+    maxWidth: '1200px',
+    maxHeight: '90vh',
+    bgcolor: 'background.paper',
+    boxShadow: 24,
+    p: 4,
+    overflow: 'auto',
+    borderRadius: 2
+  };
 
   return (
     <div className="bg-white shadow-md rounded-lg p-6">
@@ -92,7 +136,7 @@ const RoomList = () => {
                 <input
                   type="text"
                   placeholder="Search rooms..."
-                  className="pl-10 pr-4 py-2 border rounded-md w-full"
+                  className="pl-10 pr-4 bg-white  py-2 border rounded-md w-full"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                 />
@@ -144,14 +188,23 @@ const RoomList = () => {
                           <button
                             className="text-blue-600 hover:text-blue-800 mr-3"
                             onClick={() => handleEdit(room)}
+                            title="Edit Room"
                           >
                             <FaEdit size={18} />
                           </button>
                           <button
-                            className="text-red-600 hover:text-red-800"
+                            className="text-red-600 hover:text-red-800 mr-3"
                             onClick={() => handleDelete(room.id)}
+                            title="Delete Room"
                           >
                             <FaTrash size={18} />
+                          </button>
+                          <button
+                            className="text-green-600 hover:text-green-800"
+                            onClick={() => handleShowSchedules(room)}
+                            title="Show Schedules"
+                          >
+                            <FaCalendarAlt size={18} />
                           </button>
                         </td>
                       </tr>
@@ -169,6 +222,29 @@ const RoomList = () => {
           )}
         </>
       )}
+
+      <Modal
+        open={showScheduleModal}
+        onClose={() => setShowScheduleModal(false)}
+        aria-labelledby="room-schedules-modal"
+      >
+        <Box sx={modalStyle}>
+          <Typography id="schedule-modal-title" variant="h5" component="h2" className="mb-4">
+            Schedules for Room: {selectedRoom?.room_code}
+          </Typography>
+          {selectedRoom && (
+            <RoutineTable roomNo={selectedRoom.id} year={year}/>
+          )}
+          <div className="flex justify-end mt-4">
+            <button
+              className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+              onClick={() => setShowScheduleModal(false)}
+            >
+              Close
+            </button>
+          </div>
+        </Box>
+      </Modal>
     </div>
   );
 };

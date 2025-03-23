@@ -74,6 +74,7 @@ type Schedule struct {
 	SubjectID    sql.NullInt64  `json:"subject_id"`
 	TeacherEmail sql.NullString `json:"teacher_email"`
 	TimeSlot     sql.NullString `json:"time_slot"`
+	Year         int32          `json:"year"`
 }
 
 type Student struct {

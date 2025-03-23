@@ -1,13 +1,12 @@
 -- name: CreateStudentSection :one
 INSERT INTO student_section (
-  id,
   name,
   program,
   year_enrolled,
   group_name,
   department
 ) VALUES (
-  $1, $2, $3, $4, $5, $6
+  $1, $2, $3, $4, $5
 ) RETURNING *;
 
 -- name: GetStudentSection :one

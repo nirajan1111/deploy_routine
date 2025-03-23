@@ -15,8 +15,7 @@ import theme from './theme';
 import RoutinePage from './pages/RoutinePage';
 import Login from './components/auth/Login';
 import Register from './components/auth/Register';
-import RoutineList from './components/routine/RoutineList';
-import CreateRoutine from './components/routine/CreateRoutine';
+
 import ViewRoutine from './components/routine/ViewRoutine';
 import RoomPage from "./pages/RoomPage"
 import TeacherRoutinePage from './pages/TeacherRoutinePage';
@@ -38,9 +37,7 @@ function App() {
             <Route path="/" element={<RoutinePage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/routines" element={<RoutineList />} />
             <Route path='/routines/:type' element={<RoomPage/>}/>
-            <Route path="/routines/create/new" element={<CreateRoutine />} />
             <Route path="/routines/:type/:id" element={<ViewRoutine />} />
             <Route path="/my-routine" element={<TeacherRoutinePage />} />
             <Route path ="/dashboard" element={<Dashboard />} />

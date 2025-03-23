@@ -57,10 +57,11 @@ INSERT INTO schedules (
   room_id,
   subject_id,
   teacher_email,
-  time_slot
+  time_slot,
+  year
 ) VALUES (
-  $1, $2, $3, $4, $5
-) RETURNING id, group_id, room_id, subject_id, teacher_email, time_slot
+  $1, $2, $3, $4, $5, $6
+) RETURNING id, group_id, room_id, subject_id, teacher_email, time_slot, year
 `
 
 type CreateScheduleParams struct {
@@ -69,6 +70,7 @@ type CreateScheduleParams struct {
 	SubjectID    sql.NullInt64  `json:"subject_id"`
 	TeacherEmail sql.NullString `json:"teacher_email"`
 	TimeSlot     sql.NullString `json:"time_slot"`
+	Year         int32          `json:"year"`
 }
 
 func (q *Queries) CreateSchedule(ctx context.Context, arg CreateScheduleParams) (Schedule, error) {
@@ -78,6 +80,7 @@ func (q *Queries) CreateSchedule(ctx context.Context, arg CreateScheduleParams) 
 		arg.SubjectID,
 		arg.TeacherEmail,
 		arg.TimeSlot,
+		arg.Year,
 	)
 	var i Schedule
 	err := row.Scan(
@@ -87,6 +90,7 @@ func (q *Queries) CreateSchedule(ctx context.Context, arg CreateScheduleParams) 
 		&i.SubjectID,
 		&i.TeacherEmail,
 		&i.TimeSlot,
+		&i.Year,
 	)
 	return i, err
 }
@@ -101,8 +105,36 @@ func (q *Queries) DeleteSchedule(ctx context.Context, id int64) error {
 	return err
 }
 
+const getDistinctYears = `-- name: GetDistinctYears :many
+SELECT DISTINCT year FROM schedules
+ORDER BY year
+`
+
+func (q *Queries) GetDistinctYears(ctx context.Context) ([]int32, error) {
+	rows, err := q.db.QueryContext(ctx, getDistinctYears)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []int32
+	for rows.Next() {
+		var year int32
+		if err := rows.Scan(&year); err != nil {
+			return nil, err
+		}
+		items = append(items, year)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getSchedule = `-- name: GetSchedule :one
-SELECT id, group_id, room_id, subject_id, teacher_email, time_slot FROM schedules
+SELECT id, group_id, room_id, subject_id, teacher_email, time_slot, year FROM schedules
 WHERE id = $1 LIMIT 1
 `
 
@@ -116,13 +148,15 @@ func (q *Queries) GetSchedule(ctx context.Context, id int64) (Schedule, error) {
 		&i.SubjectID,
 		&i.TeacherEmail,
 		&i.TimeSlot,
+		&i.Year,
 	)
 	return i, err
 }
 
 const getSchedulesByGroup = `-- name: GetSchedulesByGroup :many
-SELECT s.id, s.group_id, s.room_id, s.subject_id, s.teacher_email, s.time_slot, 
+SELECT s.id, s.group_id, s.room_id, s.subject_id, s.teacher_email, s.time_slot, s.year, 
   t.name AS teacher_name,
+  t.designation AS teacher_designation,
   r.room_code,
   r.block_no,
   sub.subject_code,
@@ -133,27 +167,34 @@ JOIN teacher t ON s.teacher_email = t.email
 JOIN room r ON s.room_id = r.id
 JOIN subject sub ON s.subject_id = sub.id
 JOIN student_section ss ON s.group_id = ss.id
-WHERE s.group_id = $1
+WHERE s.group_id = $1 AND s.year = $2
 ORDER BY s.time_slot
 `
 
-type GetSchedulesByGroupRow struct {
-	ID           int64          `json:"id"`
-	GroupID      sql.NullInt64  `json:"group_id"`
-	RoomID       sql.NullInt64  `json:"room_id"`
-	SubjectID    sql.NullInt64  `json:"subject_id"`
-	TeacherEmail sql.NullString `json:"teacher_email"`
-	TimeSlot     sql.NullString `json:"time_slot"`
-	TeacherName  sql.NullString `json:"teacher_name"`
-	RoomCode     sql.NullString `json:"room_code"`
-	BlockNo      sql.NullString `json:"block_no"`
-	SubjectCode  sql.NullString `json:"subject_code"`
-	SubjectName  sql.NullString `json:"subject_name"`
-	GroupName    sql.NullString `json:"group_name"`
+type GetSchedulesByGroupParams struct {
+	GroupID sql.NullInt64 `json:"group_id"`
+	Year    int32         `json:"year"`
 }
 
-func (q *Queries) GetSchedulesByGroup(ctx context.Context, groupID sql.NullInt64) ([]GetSchedulesByGroupRow, error) {
-	rows, err := q.db.QueryContext(ctx, getSchedulesByGroup, groupID)
+type GetSchedulesByGroupRow struct {
+	ID                 int64          `json:"id"`
+	GroupID            sql.NullInt64  `json:"group_id"`
+	RoomID             sql.NullInt64  `json:"room_id"`
+	SubjectID          sql.NullInt64  `json:"subject_id"`
+	TeacherEmail       sql.NullString `json:"teacher_email"`
+	TimeSlot           sql.NullString `json:"time_slot"`
+	Year               int32          `json:"year"`
+	TeacherName        sql.NullString `json:"teacher_name"`
+	TeacherDesignation sql.NullString `json:"teacher_designation"`
+	RoomCode           sql.NullString `json:"room_code"`
+	BlockNo            sql.NullString `json:"block_no"`
+	SubjectCode        sql.NullString `json:"subject_code"`
+	SubjectName        sql.NullString `json:"subject_name"`
+	GroupName          sql.NullString `json:"group_name"`
+}
+
+func (q *Queries) GetSchedulesByGroup(ctx context.Context, arg GetSchedulesByGroupParams) ([]GetSchedulesByGroupRow, error) {
+	rows, err := q.db.QueryContext(ctx, getSchedulesByGroup, arg.GroupID, arg.Year)
 	if err != nil {
 		return nil, err
 	}
@@ -168,7 +209,9 @@ func (q *Queries) GetSchedulesByGroup(ctx context.Context, groupID sql.NullInt64
 			&i.SubjectID,
 			&i.TeacherEmail,
 			&i.TimeSlot,
+			&i.Year,
 			&i.TeacherName,
+			&i.TeacherDesignation,
 			&i.RoomCode,
 			&i.BlockNo,
 			&i.SubjectCode,
@@ -189,8 +232,9 @@ func (q *Queries) GetSchedulesByGroup(ctx context.Context, groupID sql.NullInt64
 }
 
 const getSchedulesByRoom = `-- name: GetSchedulesByRoom :many
-SELECT s.id, s.group_id, s.room_id, s.subject_id, s.teacher_email, s.time_slot, 
+SELECT s.id, s.group_id, s.room_id, s.subject_id, s.teacher_email, s.time_slot, s.year, 
   t.name AS teacher_name,
+  t.designation AS teacher_designation,
   r.room_code,
   r.block_no,
   sub.subject_code,
@@ -201,27 +245,34 @@ JOIN teacher t ON s.teacher_email = t.email
 JOIN room r ON s.room_id = r.id
 JOIN subject sub ON s.subject_id = sub.id
 JOIN student_section ss ON s.group_id = ss.id
-WHERE s.room_id = $1
+WHERE s.room_id = $1 AND s.year = $2
 ORDER BY s.time_slot
 `
 
-type GetSchedulesByRoomRow struct {
-	ID           int64          `json:"id"`
-	GroupID      sql.NullInt64  `json:"group_id"`
-	RoomID       sql.NullInt64  `json:"room_id"`
-	SubjectID    sql.NullInt64  `json:"subject_id"`
-	TeacherEmail sql.NullString `json:"teacher_email"`
-	TimeSlot     sql.NullString `json:"time_slot"`
-	TeacherName  sql.NullString `json:"teacher_name"`
-	RoomCode     sql.NullString `json:"room_code"`
-	BlockNo      sql.NullString `json:"block_no"`
-	SubjectCode  sql.NullString `json:"subject_code"`
-	SubjectName  sql.NullString `json:"subject_name"`
-	GroupName    sql.NullString `json:"group_name"`
+type GetSchedulesByRoomParams struct {
+	RoomID sql.NullInt64 `json:"room_id"`
+	Year   int32         `json:"year"`
 }
 
-func (q *Queries) GetSchedulesByRoom(ctx context.Context, roomID sql.NullInt64) ([]GetSchedulesByRoomRow, error) {
-	rows, err := q.db.QueryContext(ctx, getSchedulesByRoom, roomID)
+type GetSchedulesByRoomRow struct {
+	ID                 int64          `json:"id"`
+	GroupID            sql.NullInt64  `json:"group_id"`
+	RoomID             sql.NullInt64  `json:"room_id"`
+	SubjectID          sql.NullInt64  `json:"subject_id"`
+	TeacherEmail       sql.NullString `json:"teacher_email"`
+	TimeSlot           sql.NullString `json:"time_slot"`
+	Year               int32          `json:"year"`
+	TeacherName        sql.NullString `json:"teacher_name"`
+	TeacherDesignation sql.NullString `json:"teacher_designation"`
+	RoomCode           sql.NullString `json:"room_code"`
+	BlockNo            sql.NullString `json:"block_no"`
+	SubjectCode        sql.NullString `json:"subject_code"`
+	SubjectName        sql.NullString `json:"subject_name"`
+	GroupName          sql.NullString `json:"group_name"`
+}
+
+func (q *Queries) GetSchedulesByRoom(ctx context.Context, arg GetSchedulesByRoomParams) ([]GetSchedulesByRoomRow, error) {
+	rows, err := q.db.QueryContext(ctx, getSchedulesByRoom, arg.RoomID, arg.Year)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +287,9 @@ func (q *Queries) GetSchedulesByRoom(ctx context.Context, roomID sql.NullInt64) 
 			&i.SubjectID,
 			&i.TeacherEmail,
 			&i.TimeSlot,
+			&i.Year,
 			&i.TeacherName,
+			&i.TeacherDesignation,
 			&i.RoomCode,
 			&i.BlockNo,
 			&i.SubjectCode,
@@ -257,8 +310,9 @@ func (q *Queries) GetSchedulesByRoom(ctx context.Context, roomID sql.NullInt64) 
 }
 
 const getSchedulesByTeacher = `-- name: GetSchedulesByTeacher :many
-SELECT s.id, s.group_id, s.room_id, s.subject_id, s.teacher_email, s.time_slot, 
+SELECT s.id, s.group_id, s.room_id, s.subject_id, s.teacher_email, s.time_slot, s.year, 
   t.name AS teacher_name,
+  t.designation AS teacher_designation,
   r.room_code,
   r.block_no,
   sub.subject_code,
@@ -269,27 +323,34 @@ JOIN teacher t ON s.teacher_email = t.email
 JOIN room r ON s.room_id = r.id
 JOIN subject sub ON s.subject_id = sub.id
 JOIN student_section ss ON s.group_id = ss.id
-WHERE s.teacher_email = $1
+WHERE s.teacher_email = $1 AND s.year = $2
 ORDER BY s.time_slot
 `
 
-type GetSchedulesByTeacherRow struct {
-	ID           int64          `json:"id"`
-	GroupID      sql.NullInt64  `json:"group_id"`
-	RoomID       sql.NullInt64  `json:"room_id"`
-	SubjectID    sql.NullInt64  `json:"subject_id"`
+type GetSchedulesByTeacherParams struct {
 	TeacherEmail sql.NullString `json:"teacher_email"`
-	TimeSlot     sql.NullString `json:"time_slot"`
-	TeacherName  sql.NullString `json:"teacher_name"`
-	RoomCode     sql.NullString `json:"room_code"`
-	BlockNo      sql.NullString `json:"block_no"`
-	SubjectCode  sql.NullString `json:"subject_code"`
-	SubjectName  sql.NullString `json:"subject_name"`
-	GroupName    sql.NullString `json:"group_name"`
+	Year         int32          `json:"year"`
 }
 
-func (q *Queries) GetSchedulesByTeacher(ctx context.Context, teacherEmail sql.NullString) ([]GetSchedulesByTeacherRow, error) {
-	rows, err := q.db.QueryContext(ctx, getSchedulesByTeacher, teacherEmail)
+type GetSchedulesByTeacherRow struct {
+	ID                 int64          `json:"id"`
+	GroupID            sql.NullInt64  `json:"group_id"`
+	RoomID             sql.NullInt64  `json:"room_id"`
+	SubjectID          sql.NullInt64  `json:"subject_id"`
+	TeacherEmail       sql.NullString `json:"teacher_email"`
+	TimeSlot           sql.NullString `json:"time_slot"`
+	Year               int32          `json:"year"`
+	TeacherName        sql.NullString `json:"teacher_name"`
+	TeacherDesignation sql.NullString `json:"teacher_designation"`
+	RoomCode           sql.NullString `json:"room_code"`
+	BlockNo            sql.NullString `json:"block_no"`
+	SubjectCode        sql.NullString `json:"subject_code"`
+	SubjectName        sql.NullString `json:"subject_name"`
+	GroupName          sql.NullString `json:"group_name"`
+}
+
+func (q *Queries) GetSchedulesByTeacher(ctx context.Context, arg GetSchedulesByTeacherParams) ([]GetSchedulesByTeacherRow, error) {
+	rows, err := q.db.QueryContext(ctx, getSchedulesByTeacher, arg.TeacherEmail, arg.Year)
 	if err != nil {
 		return nil, err
 	}
@@ -304,7 +365,9 @@ func (q *Queries) GetSchedulesByTeacher(ctx context.Context, teacherEmail sql.Nu
 			&i.SubjectID,
 			&i.TeacherEmail,
 			&i.TimeSlot,
+			&i.Year,
 			&i.TeacherName,
+			&i.TeacherDesignation,
 			&i.RoomCode,
 			&i.BlockNo,
 			&i.SubjectCode,
@@ -325,7 +388,7 @@ func (q *Queries) GetSchedulesByTeacher(ctx context.Context, teacherEmail sql.Nu
 }
 
 const listSchedules = `-- name: ListSchedules :many
-SELECT id, group_id, room_id, subject_id, teacher_email, time_slot FROM schedules
+SELECT id, group_id, room_id, subject_id, teacher_email, time_slot, year FROM schedules
 ORDER BY time_slot
 LIMIT $1
 OFFSET $2
@@ -352,6 +415,7 @@ func (q *Queries) ListSchedules(ctx context.Context, arg ListSchedulesParams) ([
 			&i.SubjectID,
 			&i.TeacherEmail,
 			&i.TimeSlot,
+			&i.Year,
 		); err != nil {
 			return nil, err
 		}
@@ -375,7 +439,7 @@ SET
   teacher_email = $5,
   time_slot = $6
 WHERE id = $1
-RETURNING id, group_id, room_id, subject_id, teacher_email, time_slot
+RETURNING id, group_id, room_id, subject_id, teacher_email, time_slot, year
 `
 
 type UpdateScheduleParams struct {
@@ -404,6 +468,18 @@ func (q *Queries) UpdateSchedule(ctx context.Context, arg UpdateScheduleParams) 
 		&i.SubjectID,
 		&i.TeacherEmail,
 		&i.TimeSlot,
+		&i.Year,
 	)
 	return i, err
+}
+
+const numberofDistinctYears = `-- name: numberofDistinctYears :one
+SELECT COUNT(DISTINCT year) FROM schedules
+`
+
+func (q *Queries) numberofDistinctYears(ctx context.Context) (int64, error) {
+	row := q.db.QueryRowContext(ctx, numberofDistinctYears)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
 }

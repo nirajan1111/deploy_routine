@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	db "github.com/nirajan1111/routiney/db/sqlc"
@@ -17,6 +18,7 @@ type createScheduleRequest struct {
 	SubjectID    int64  `json:"subject_id" binding:"required"`
 	TeacherEmail string `json:"teacher_email" binding:"required,email"`
 	TimeSlot     string `json:"time_slot" binding:"required"`
+	Year         int32  `json:"year" binding:"required"`
 }
 
 type scheduleResponse struct {
@@ -26,21 +28,24 @@ type scheduleResponse struct {
 	SubjectID    int64  `json:"subject_id,omitempty"`
 	TeacherEmail string `json:"teacher_email,omitempty"`
 	TimeSlot     string `json:"time_slot,omitempty"`
+	Year         int32  `json:"year,omitempty"`
 }
 
 type detailedScheduleResponse struct {
-	ID           int64  `json:"id"`
-	GroupID      int64  `json:"group_id,omitempty"`
-	RoomID       int64  `json:"room_id,omitempty"`
-	SubjectID    int64  `json:"subject_id,omitempty"`
-	TeacherEmail string `json:"teacher_email,omitempty"`
-	TimeSlot     string `json:"time_slot,omitempty"`
-	TeacherName  string `json:"teacher_name,omitempty"`
-	RoomCode     string `json:"room_code,omitempty"`
-	BlockNo      string `json:"block_no,omitempty"`
-	SubjectCode  string `json:"subject_code,omitempty"`
-	SubjectName  string `json:"subject_name,omitempty"`
-	GroupName    string `json:"group_name,omitempty"`
+	ID                 int64  `json:"id"`
+	GroupID            int64  `json:"group_id,omitempty"`
+	RoomID             int64  `json:"room_id,omitempty"`
+	SubjectID          int64  `json:"subject_id,omitempty"`
+	TeacherEmail       string `json:"teacher_email,omitempty"`
+	TimeSlot           string `json:"time_slot,omitempty"`
+	Year               int32  `json:"year,omitempty"`
+	TeacherName        string `json:"teacher_name,omitempty"`
+	RoomCode           string `json:"room_code,omitempty"`
+	BlockNo            string `json:"block_no,omitempty"`
+	SubjectCode        string `json:"subject_code,omitempty"`
+	SubjectName        string `json:"subject_name,omitempty"`
+	GroupName          string `json:"group_name,omitempty"`
+	TeacherDesignation string `json:"teacher_designation,omitempty"`
 }
 
 type getScheduleRequest struct {
@@ -58,6 +63,7 @@ type updateScheduleRequest struct {
 	SubjectID    int64  `json:"subject_id"`
 	TeacherEmail string `json:"teacher_email"`
 	TimeSlot     string `json:"time_slot"`
+	Year         int32  `json:"year"`
 }
 
 type checkConflictRequest struct {
@@ -76,61 +82,78 @@ func newScheduleResponse(schedule db.Schedule) scheduleResponse {
 		SubjectID:    schedule.SubjectID.Int64,
 		TeacherEmail: schedule.TeacherEmail.String,
 		TimeSlot:     schedule.TimeSlot.String,
+		Year:         schedule.Year,
 	}
 }
 
 func newDetailedScheduleByTeacherResponse(schedule db.GetSchedulesByTeacherRow) detailedScheduleResponse {
 	return detailedScheduleResponse{
-		ID:           schedule.ID,
-		GroupID:      schedule.GroupID.Int64,
-		RoomID:       schedule.RoomID.Int64,
-		SubjectID:    schedule.SubjectID.Int64,
-		TeacherEmail: schedule.TeacherEmail.String,
-		TimeSlot:     schedule.TimeSlot.String,
-		TeacherName:  schedule.TeacherName.String,
-		RoomCode:     schedule.RoomCode.String,
-		BlockNo:      schedule.BlockNo.String,
-		SubjectCode:  schedule.SubjectCode.String,
-		SubjectName:  schedule.SubjectName.String,
-		GroupName:    schedule.GroupName.String,
+		ID:                 schedule.ID,
+		GroupID:            schedule.GroupID.Int64,
+		RoomID:             schedule.RoomID.Int64,
+		SubjectID:          schedule.SubjectID.Int64,
+		TeacherEmail:       schedule.TeacherEmail.String,
+		TimeSlot:           schedule.TimeSlot.String,
+		Year:               schedule.Year,
+		TeacherName:        schedule.TeacherName.String,
+		RoomCode:           schedule.RoomCode.String,
+		BlockNo:            schedule.BlockNo.String,
+		SubjectCode:        schedule.SubjectCode.String,
+		SubjectName:        schedule.SubjectName.String,
+		GroupName:          schedule.GroupName.String,
+		TeacherDesignation: schedule.TeacherDesignation.String,
 	}
 }
 
 func newDetailedScheduleByRoomResponse(schedule db.GetSchedulesByRoomRow) detailedScheduleResponse {
 	return detailedScheduleResponse{
-		ID:           schedule.ID,
-		GroupID:      schedule.GroupID.Int64,
-		RoomID:       schedule.RoomID.Int64,
-		SubjectID:    schedule.SubjectID.Int64,
-		TeacherEmail: schedule.TeacherEmail.String,
-		TimeSlot:     schedule.TimeSlot.String,
-		TeacherName:  schedule.TeacherName.String,
-		RoomCode:     schedule.RoomCode.String,
-		BlockNo:      schedule.BlockNo.String,
-		SubjectCode:  schedule.SubjectCode.String,
-		SubjectName:  schedule.SubjectName.String,
-		GroupName:    schedule.GroupName.String,
+		ID:                 schedule.ID,
+		GroupID:            schedule.GroupID.Int64,
+		RoomID:             schedule.RoomID.Int64,
+		SubjectID:          schedule.SubjectID.Int64,
+		TeacherEmail:       schedule.TeacherEmail.String,
+		TimeSlot:           schedule.TimeSlot.String,
+		TeacherName:        schedule.TeacherName.String,
+		Year:               schedule.Year,
+		RoomCode:           schedule.RoomCode.String,
+		BlockNo:            schedule.BlockNo.String,
+		SubjectCode:        schedule.SubjectCode.String,
+		SubjectName:        schedule.SubjectName.String,
+		GroupName:          schedule.GroupName.String,
+		TeacherDesignation: schedule.TeacherDesignation.String,
 	}
 }
 
 func newDetailedScheduleByGroupResponse(schedule db.GetSchedulesByGroupRow) detailedScheduleResponse {
 	return detailedScheduleResponse{
-		ID:           schedule.ID,
-		GroupID:      schedule.GroupID.Int64,
-		RoomID:       schedule.RoomID.Int64,
-		SubjectID:    schedule.SubjectID.Int64,
-		TeacherEmail: schedule.TeacherEmail.String,
-		TimeSlot:     schedule.TimeSlot.String,
-		TeacherName:  schedule.TeacherName.String,
-		RoomCode:     schedule.RoomCode.String,
-		BlockNo:      schedule.BlockNo.String,
-		SubjectCode:  schedule.SubjectCode.String,
-		SubjectName:  schedule.SubjectName.String,
-		GroupName:    schedule.GroupName.String,
+		ID:                 schedule.ID,
+		GroupID:            schedule.GroupID.Int64,
+		RoomID:             schedule.RoomID.Int64,
+		SubjectID:          schedule.SubjectID.Int64,
+		TeacherEmail:       schedule.TeacherEmail.String,
+		TimeSlot:           schedule.TimeSlot.String,
+		TeacherName:        schedule.TeacherName.String,
+		Year:               schedule.Year,
+		RoomCode:           schedule.RoomCode.String,
+		BlockNo:            schedule.BlockNo.String,
+		SubjectCode:        schedule.SubjectCode.String,
+		SubjectName:        schedule.SubjectName.String,
+		GroupName:          schedule.GroupName.String,
+		TeacherDesignation: schedule.TeacherDesignation.String,
 	}
 }
 
-// Create a new schedule
+func getNepaliYear() int {
+	currentYear := time.Now().Year()
+	currentMonth := time.Now().Month()
+	currentDay := time.Now().Day()
+
+	if currentMonth < 4 || (currentMonth == 4 && currentDay < 14) {
+		return currentYear + 56
+	}
+	return currentYear + 57
+}
+
 func (server *Server) createSchedule(ctx *gin.Context) {
 	var req createScheduleRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -138,7 +161,6 @@ func (server *Server) createSchedule(ctx *gin.Context) {
 		return
 	}
 
-	// Check if user has admin rights
 	adminStatus, err := checkAdmin(ctx, "admin")
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
@@ -148,8 +170,10 @@ func (server *Server) createSchedule(ctx *gin.Context) {
 		ctx.JSON(http.StatusForbidden, errorResponse(fmt.Errorf("not authorized to create schedules")))
 		return
 	}
+	if req.Year == 0 {
+		req.Year = int32(getNepaliYear())
+	}
 
-	// Check for schedule conflicts before creating
 	conflictParams := db.CheckScheduleConflictsParams{
 		TimeSlot: StringToSQLNullString(req.TimeSlot),
 		RoomID: sql.NullInt64{
@@ -189,32 +213,11 @@ func (server *Server) createSchedule(ctx *gin.Context) {
 		},
 		TeacherEmail: StringToSQLNullString(req.TeacherEmail),
 		TimeSlot:     StringToSQLNullString(req.TimeSlot),
+		Year:         req.Year,
 	}
 
 	schedule, err := server.store.CreateSchedule(ctx, arg)
 	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	res := newScheduleResponse(schedule)
-	ctx.JSON(http.StatusOK, res)
-}
-
-// Get schedule by ID
-func (server *Server) getSchedule(ctx *gin.Context) {
-	var req getScheduleRequest
-	if err := ctx.ShouldBindUri(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	schedule, err := server.store.GetSchedule(ctx, req.ID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(fmt.Errorf("schedule not found")))
-			return
-		}
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
@@ -260,33 +263,6 @@ func (server *Server) updateSchedule(ctx *gin.Context) {
 		return
 	}
 
-	// Check for schedule conflicts if time slot is being updated
-	if req.TimeSlot != "" {
-		conflictParams := db.CheckScheduleConflictsParams{
-			TimeSlot: StringToSQLNullString(req.TimeSlot),
-			RoomID: sql.NullInt64{
-				Int64: req.RoomID,
-				Valid: req.RoomID != 0,
-			},
-			TeacherEmail: StringToSQLNullString(req.TeacherEmail),
-			GroupID: sql.NullInt64{
-				Int64: req.GroupID,
-				Valid: req.GroupID != 0,
-			},
-		}
-
-		hasConflict, err := server.store.CheckScheduleConflicts(ctx, conflictParams)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-			return
-		}
-
-		if hasConflict {
-			ctx.JSON(http.StatusConflict, errorResponse(fmt.Errorf("schedule conflict detected: room, teacher, or group already scheduled for this time slot")))
-			return
-		}
-	}
-
 	arg := db.UpdateScheduleParams{
 		ID: uri.ID,
 		GroupID: sql.NullInt64{
@@ -315,15 +291,12 @@ func (server *Server) updateSchedule(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-// Delete schedule
 func (server *Server) deleteSchedule(ctx *gin.Context) {
 	var req getScheduleRequest
 	if err := ctx.ShouldBindUri(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, errorResponse(err))
 		return
 	}
-
-	// Check if user has admin rights
 	adminStatus, err := checkAdmin(ctx, "admin")
 	if err != nil {
 		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
@@ -343,7 +316,6 @@ func (server *Server) deleteSchedule(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{"message": "Schedule deleted successfully"})
 }
 
-// Get schedules by teacher
 func (server *Server) getSchedulesByTeacher(ctx *gin.Context) {
 	teacherEmail := ctx.Param("email")
 	if teacherEmail == "" {
@@ -351,18 +323,33 @@ func (server *Server) getSchedulesByTeacher(ctx *gin.Context) {
 		return
 	}
 
-	schedules, err := server.store.GetSchedulesByTeacher(ctx, StringToSQLNullString(teacherEmail))
+	yearStr := ctx.Query("year")
+	if yearStr == "" {
+		yearStr = strconv.Itoa(getNepaliYear())
+	}
+
+	yearInt, err := strconv.Atoi(yearStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("invalid year")))
+		return
+	}
+
+	// Convert to int32
+	year := int32(yearInt)
+
+	// Create query parameters with year
+	arg := db.GetSchedulesByTeacherParams{
+		TeacherEmail: StringToSQLNullString(teacherEmail),
+		Year:         year,
+	}
+
+	schedules, err := server.store.GetSchedulesByTeacher(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	if len(schedules) == 0 {
-		ctx.JSON(http.StatusNotFound, errorResponse(fmt.Errorf("no schedules found for this teacher")))
-		return
-	}
-
-	var scheduleResponses []detailedScheduleResponse
+	scheduleResponses := make([]detailedScheduleResponse, 0)
 	for _, schedule := range schedules {
 		scheduleResponses = append(scheduleResponses, newDetailedScheduleByTeacherResponse(schedule))
 	}
@@ -370,7 +357,6 @@ func (server *Server) getSchedulesByTeacher(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, scheduleResponses)
 }
 
-// Get schedules by room
 func (server *Server) getSchedulesByRoom(ctx *gin.Context) {
 	roomIDStr := ctx.Param("room_id")
 	if roomIDStr == "" {
@@ -384,18 +370,39 @@ func (server *Server) getSchedulesByRoom(ctx *gin.Context) {
 		return
 	}
 
-	schedules, err := server.store.GetSchedulesByRoom(ctx, sql.NullInt64{Int64: roomID, Valid: true})
+	// Extract year from query parameters
+	yearStr := ctx.Query("year")
+	if yearStr == "" {
+		yearStr = strconv.Itoa(getNepaliYear())
+	}
+
+	yearInt, err := strconv.Atoi(yearStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("invalid year")))
+		return
+	}
+
+	// Convert to int32
+	year := int32(yearInt)
+
+	// Create query parameters
+	arg := db.GetSchedulesByRoomParams{
+		RoomID: sql.NullInt64{
+			Int64: roomID,
+			Valid: true,
+		},
+		Year: year,
+	}
+
+	// Use the arg parameter that includes both room ID and year
+	schedules, err := server.store.GetSchedulesByRoom(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	if len(schedules) == 0 {
-		ctx.JSON(http.StatusNotFound, errorResponse(fmt.Errorf("no schedules found for this room")))
-		return
-	}
-
-	var scheduleResponses []detailedScheduleResponse
+	// Return empty array if no schedules found
+	scheduleResponses := make([]detailedScheduleResponse, 0)
 	for _, schedule := range schedules {
 		scheduleResponses = append(scheduleResponses, newDetailedScheduleByRoomResponse(schedule))
 	}
@@ -417,21 +424,61 @@ func (server *Server) getSchedulesByGroup(ctx *gin.Context) {
 		return
 	}
 
-	schedules, err := server.store.GetSchedulesByGroup(ctx, sql.NullInt64{Int64: groupID, Valid: true})
+	// Extract year from query parameters
+	yearStr := ctx.Query("year")
+	if yearStr == "" {
+		yearStr = strconv.Itoa(getNepaliYear())
+	}
+
+	yearInt, err := strconv.Atoi(yearStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(fmt.Errorf("invalid year")))
+		return
+	}
+
+	// Convert to int32
+	year := int32(yearInt)
+
+	// Create query parameters with year
+	arg := db.GetSchedulesByGroupParams{
+		GroupID: sql.NullInt64{
+			Int64: groupID,
+			Valid: true,
+		},
+		Year: year,
+	}
+
+	schedules, err := server.store.GetSchedulesByGroup(ctx, arg)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
 
-	if len(schedules) == 0 {
-		ctx.JSON(http.StatusNotFound, errorResponse(fmt.Errorf("no schedules found for this group")))
-		return
-	}
-
-	var scheduleResponses []detailedScheduleResponse
+	scheduleResponses := make([]detailedScheduleResponse, 0)
 	for _, schedule := range schedules {
 		scheduleResponses = append(scheduleResponses, newDetailedScheduleByGroupResponse(schedule))
 	}
 
 	ctx.JSON(http.StatusOK, scheduleResponses)
+}
+
+func (server *Server) getAvailableYears(ctx *gin.Context) {
+	years, err := server.store.GetDistinctYears(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	// If no years found, return the current Nepali year in an array
+	if len(years) == 0 {
+		currentYear := int32(getNepaliYear())
+		years = []int32{currentYear}
+	}
+
+	// Return years in a proper JSON structure
+	response := gin.H{
+		"years": years,
+	}
+
+	ctx.JSON(http.StatusOK, response)
 }

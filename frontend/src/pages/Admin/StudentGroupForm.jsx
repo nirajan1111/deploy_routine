@@ -51,7 +51,7 @@ const StudentGroupForm = ({ group, onSubmit, onCancel }) => {
   };
 
   const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 10 }, (_, i) => currentYear - i);
+  const yearOptions = Array.from({ length: 10 }, (_, i) => currentYear+(2080-2024) - i);
 
   return (
     <div>
@@ -67,7 +67,7 @@ const StudentGroupForm = ({ group, onSubmit, onCancel }) => {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
+              className={`w-full bg-white  px-3 py-2 border rounded-md ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
               placeholder="e.g., Computer Science Year 1"
             />
             {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
@@ -82,7 +82,7 @@ const StudentGroupForm = ({ group, onSubmit, onCancel }) => {
               name="program"
               value={formData.program}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${errors.program ? 'border-red-500' : 'border-gray-300'}`}
+              className={`w-full bg-white  px-3 py-2 border rounded-md ${errors.program ? 'border-red-500' : 'border-gray-300'}`}
               placeholder="e.g., CS, MATH, PHY"
               maxLength={10}
             />
@@ -97,7 +97,7 @@ const StudentGroupForm = ({ group, onSubmit, onCancel }) => {
               name="year_enrolled"
               value={formData.year_enrolled}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${errors.year_enrolled ? 'border-red-500' : 'border-gray-300'}`}
+              className={`w-full bg-white  px-3 py-2 border rounded-md ${errors.year_enrolled ? 'border-red-500' : 'border-gray-300'}`}
             >
               <option value="">Select Year</option>
               {yearOptions.map(year => (
@@ -116,7 +116,7 @@ const StudentGroupForm = ({ group, onSubmit, onCancel }) => {
               name="group_name"
               value={formData.group_name}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${errors.group_name ? 'border-red-500' : 'border-gray-300'}`}
+              className={`w-full bg-white px-3 py-2 border rounded-md ${errors.group_name ? 'border-red-500' : 'border-gray-300'}`}
               placeholder="e.g., A, B, C"
               maxLength={2}
             />
@@ -131,16 +131,11 @@ const StudentGroupForm = ({ group, onSubmit, onCancel }) => {
               name="department"
               value={formData.department}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${errors.department ? 'border-red-500' : 'border-gray-300'}`}
+              className={`w-full px-3 bg-white py-2 border rounded-md ${errors.department ? 'border-red-500' : 'border-gray-300'}`}
             >
               <option value="">Select Department</option>
-              <option value="Computer Science">Computer Science</option>
-              <option value="Mathematics">Mathematics</option>
-              <option value="Physics">Physics</option>
-              <option value="Chemistry">Chemistry</option>
-              <option value="Biology">Biology</option>
-              <option value="Engineering">Engineering</option>
-              <option value="Arts">Arts</option>
+              <option value="DOECE">Department of Electronics and Computer Engineering</option>
+             
             </select>
             {errors.department && <p className="mt-1 text-sm text-red-500">{errors.department}</p>}
           </div>
@@ -150,7 +145,7 @@ const StudentGroupForm = ({ group, onSubmit, onCancel }) => {
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+            className="px-4 py-2 border bg-white border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
           >
             Cancel
           </button>

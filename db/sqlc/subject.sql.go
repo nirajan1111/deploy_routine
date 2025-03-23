@@ -42,29 +42,23 @@ func (q *Queries) CountSubjects(ctx context.Context) (int64, error) {
 
 const createSubject = `-- name: CreateSubject :one
 INSERT INTO subject (
-  id,
+
   subject_code,
   name,
   department
 ) VALUES (
-  $1, $2, $3, $4
+   $1, $2, $3
 ) RETURNING id, subject_code, name, department
 `
 
 type CreateSubjectParams struct {
-	ID          int64          `json:"id"`
 	SubjectCode sql.NullString `json:"subject_code"`
 	Name        sql.NullString `json:"name"`
 	Department  sql.NullString `json:"department"`
 }
 
 func (q *Queries) CreateSubject(ctx context.Context, arg CreateSubjectParams) (Subject, error) {
-	row := q.db.QueryRowContext(ctx, createSubject,
-		arg.ID,
-		arg.SubjectCode,
-		arg.Name,
-		arg.Department,
-	)
+	row := q.db.QueryRowContext(ctx, createSubject, arg.SubjectCode, arg.Name, arg.Department)
 	var i Subject
 	err := row.Scan(
 		&i.ID,
@@ -83,6 +77,51 @@ WHERE id = $1
 func (q *Queries) DeleteSubject(ctx context.Context, id int64) error {
 	_, err := q.db.ExecContext(ctx, deleteSubject, id)
 	return err
+}
+
+const getAssignedTeachers = `-- name: GetAssignedTeachers :many
+SELECT st.subject_id, st.teacher_email, t.name AS teacher_name , t.designation , t.department 
+FROM subject_teachers st
+JOIN teacher t ON st.teacher_email = t.email
+WHERE st.subject_id = $1
+ORDER BY st.subject_id, st.teacher_email
+`
+
+type GetAssignedTeachersRow struct {
+	SubjectID    int64          `json:"subject_id"`
+	TeacherEmail string         `json:"teacher_email"`
+	TeacherName  sql.NullString `json:"teacher_name"`
+	Designation  sql.NullString `json:"designation"`
+	Department   sql.NullString `json:"department"`
+}
+
+func (q *Queries) GetAssignedTeachers(ctx context.Context, subjectID int64) ([]GetAssignedTeachersRow, error) {
+	rows, err := q.db.QueryContext(ctx, getAssignedTeachers, subjectID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetAssignedTeachersRow
+	for rows.Next() {
+		var i GetAssignedTeachersRow
+		if err := rows.Scan(
+			&i.SubjectID,
+			&i.TeacherEmail,
+			&i.TeacherName,
+			&i.Designation,
+			&i.Department,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
 const getSubject = `-- name: GetSubject :one

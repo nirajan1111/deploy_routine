@@ -9,6 +9,7 @@ import RoutineOptimizer from '../components/routine/RoutineOptimizer';
 import api from '../services/api';
 import { RoutineList } from '../components/routine';
 import axios from 'axios';
+import BACKEND_URL from './../config';
 const RoutinePage = () => {
   const dispatch = useDispatch();
   const { schedules, loading } = useSelector((state) => state.routine);
@@ -27,7 +28,7 @@ const RoutinePage = () => {
  
   const fetchGroup = async () => {
     try {
-      const response = await axios.get('http://localhost:8080/student-sections?limit=10', {
+      const response = await axios.get(`${BACKEND_URL}/student-sections?limit=10`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,
           'Content-Type': 'application/json',

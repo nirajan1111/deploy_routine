@@ -23,19 +23,17 @@ func (q *Queries) CountStudentSections(ctx context.Context) (int64, error) {
 
 const createStudentSection = `-- name: CreateStudentSection :one
 INSERT INTO student_section (
-  id,
   name,
   program,
   year_enrolled,
   group_name,
   department
 ) VALUES (
-  $1, $2, $3, $4, $5, $6
+  $1, $2, $3, $4, $5
 ) RETURNING id, name, program, year_enrolled, group_name, department
 `
 
 type CreateStudentSectionParams struct {
-	ID           int32          `json:"id"`
 	Name         sql.NullString `json:"name"`
 	Program      sql.NullString `json:"program"`
 	YearEnrolled sql.NullInt32  `json:"year_enrolled"`
@@ -45,7 +43,6 @@ type CreateStudentSectionParams struct {
 
 func (q *Queries) CreateStudentSection(ctx context.Context, arg CreateStudentSectionParams) (StudentSection, error) {
 	row := q.db.QueryRowContext(ctx, createStudentSection,
-		arg.ID,
 		arg.Name,
 		arg.Program,
 		arg.YearEnrolled,

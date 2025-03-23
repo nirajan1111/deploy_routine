@@ -10,11 +10,26 @@ import (
 )
 
 type addRoomRequest struct {
-	room_code        string `json:"room_code" binding:"required"`
-	block_no         string `json:"block_no" binding:"required"`
-	department       string `json:"department" binding:"required"`
-	floor_no         int32  `json:"floor_no" binding:"required"`
-	screen_available bool   `json:"screen_available" binding:"required"`
+	Room_code        string `json:"room_code" binding:"required"`
+	Block_no         string `json:"block_no" binding:"required"`
+	Department       string `json:"department" binding:"required"`
+	Floor_no         int32  `json:"floor_no" binding:"required"`
+	Screen_available bool   `json:"screen_available" binding:"required"`
+}
+type newRoomresponse struct {
+	ID               int32  `json:"id"`
+	Room_code        string `json:"room_code"`
+	Block_no         string `json:"block_no"`
+	Department       string `json:"department"`
+	Floor_no         int32  `json:"floor_no"`
+	Screen_available bool   `json:"screen_available"`
+}
+type updateRoomRequest struct {
+	Room_code        string `json:"room_code" binding:"required"`
+	Block_no         string `json:"block_no" binding:"required"`
+	Department       string `json:"department" binding:"required"`
+	Floor_no         int32  `json:"floor_no" binding:"required"`
+	Screen_available bool   `json:"screen_available" binding:"required"`
 }
 
 func (server *Server) addRoom(ctx *gin.Context) {
@@ -32,20 +47,23 @@ func (server *Server) addRoom(ctx *gin.Context) {
 		ctx.JSON(400, errorResponse(err))
 		return
 	}
-	floor_no := req.floor_no
+	fmt.Printf("Received request: %+v\n", req)
+	floor_no := req.Floor_no
 	arg := db.CreateRoomParams{
 		FloorNo: sql.NullInt32{
 			Int32: floor_no,
 			Valid: true,
 		},
 		ScreenAvailable: sql.NullBool{
-			Bool:  req.screen_available,
+			Bool:  req.Screen_available,
 			Valid: true,
 		},
-		RoomCode:   StringToSQLNullString(req.room_code),
-		Department: StringToSQLNullString(req.department),
-		BlockNo:    StringToSQLNullString(req.block_no),
+		RoomCode:   StringToSQLNullString(req.Room_code),
+		Department: StringToSQLNullString(req.Department),
+		BlockNo:    StringToSQLNullString(req.Block_no),
 	}
+	fmt.Printf("Creating room with params: %+v\n", arg)
+
 	room, err := server.store.CreateRoom(ctx, arg)
 	if err != nil {
 		ctx.JSON(500, errorResponse(err))
@@ -55,26 +73,43 @@ func (server *Server) addRoom(ctx *gin.Context) {
 }
 
 func (server *Server) listRooms(ctx *gin.Context) {
-	count_room, err := server.store.CountRooms(ctx)
-	if err != nil {
-		ctx.JSON(500, errorResponse(err))
-		return
-	}
-	if count_room == 0 {
-		ctx.JSON(404, errorResponse(err))
-		return
-	}
+
 	var req db.ListRoomsParams
 	if err := ctx.ShouldBindQuery(&req); err != nil {
 		ctx.JSON(400, errorResponse(err))
 		return
 	}
+	if req.Limit == 0 {
+		req.Limit = 10
+	}
+	if req.Offset == 0 {
+		req.Offset = 0
+	}
+
 	rooms, err := server.store.ListRooms(ctx, req)
 	if err != nil {
 		ctx.JSON(500, errorResponse(err))
 		return
 	}
-	ctx.JSON(200, rooms)
+
+	var roomResponses []newRoomresponse
+	for _, room := range rooms {
+		roomResponse := newRoomresponse{
+			ID:               room.ID,
+			Room_code:        room.RoomCode.String,
+			Block_no:         room.BlockNo.String,
+			Department:       room.Department.String,
+			Floor_no:         room.FloorNo.Int32,
+			Screen_available: room.ScreenAvailable.Bool,
+		}
+		roomResponses = append(roomResponses, roomResponse)
+	}
+	fmt.Println(roomResponses)
+	if len(roomResponses) == 0 {
+		ctx.JSON(404, errorResponse(fmt.Errorf("no rooms found")))
+		return
+	}
+	ctx.JSON(200, roomResponses)
 }
 func (server *Server) getRoom(ctx *gin.Context) {
 	room_id := ctx.Param("id")
@@ -96,6 +131,7 @@ func (server *Server) getRoom(ctx *gin.Context) {
 		ctx.JSON(500, errorResponse(err))
 		return
 	}
+
 	ctx.JSON(200, room)
 }
 
@@ -119,13 +155,35 @@ func (server *Server) updateRoom(ctx *gin.Context) {
 		ctx.JSON(400, errorResponse(fmt.Errorf("invalid room id")))
 		return
 	}
-	var req db.UpdateRoomParams
-	if err := ctx.ShouldBindJSON(&req); err != nil {
+	var reqData updateRoomRequest
+	if err := ctx.ShouldBindJSON(&reqData); err != nil {
 		ctx.JSON(400, errorResponse(err))
 		return
 	}
-	req.ID = int32(room_id_int)
-	room, err := server.store.UpdateRoom(ctx, req)
+	arg := db.UpdateRoomParams{
+		ID: int32(room_id_int),
+		Department: sql.NullString{
+			String: reqData.Department,
+			Valid:  true,
+		},
+		RoomCode: sql.NullString{
+			String: reqData.Room_code,
+			Valid:  true,
+		},
+		BlockNo: sql.NullString{
+			String: reqData.Block_no,
+			Valid:  true,
+		},
+		FloorNo: sql.NullInt32{
+			Int32: reqData.Floor_no,
+			Valid: true,
+		},
+		ScreenAvailable: sql.NullBool{
+			Bool:  reqData.Screen_available,
+			Valid: true,
+		},
+	}
+	room, err := server.store.UpdateRoom(ctx, arg)
 	if err != nil {
 		ctx.JSON(500, errorResponse(err))
 		return

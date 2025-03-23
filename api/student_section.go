@@ -77,16 +77,7 @@ func (server *Server) createStudentSection(ctx *gin.Context) {
 		return
 	}
 
-	count, err := server.store.CountStudentSections(ctx)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	newID := int32(count + 1)
-
 	arg := db.CreateStudentSectionParams{
-		ID:      newID,
 		Name:    StringToSQLNullString(req.Name),
 		Program: StringToSQLNullString(req.Program),
 		YearEnrolled: sql.NullInt32{

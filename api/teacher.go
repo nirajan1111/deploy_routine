@@ -48,6 +48,13 @@ func SQLNullStringToString(s sql.NullString) string {
 	return ""
 }
 
+func SQLNullInt64ToInt64(s sql.NullInt64) int64 {
+	if s.Valid {
+		return s.Int64
+	}
+	return 0
+}
+
 func checkAdmin(ctx context.Context, role string) (bool, error) {
 	userPayload, exists := ctx.Value("user").(*token.Payload)
 	if !exists {
@@ -185,15 +192,16 @@ func (server *Server) getMe(ctx *gin.Context) {
 }
 
 func (server *Server) updateTeacher(ctx *gin.Context) {
-	admin_status, err := checkAdmin(ctx, "admin")
-	if err != nil {
-		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
-		return
-	}
-	if !admin_status {
-		ctx.JSON(http.StatusForbidden, errorResponse(fmt.Errorf("not authorized to view all teachers")))
-		return
-	}
+	// admin_status, err := checkAdmin(ctx, "admin")
+	// if err != nil {
+	// 	ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+	// 	return
+	// }
+	// if !admin_status {
+	// 	ctx.JSON(http.StatusForbidden, errorResponse(fmt.Errorf("not authorized to view all teachers")))
+	// 	return
+	// }
+	fmt.Println("Inside update teacher")
 	email := ctx.Param("email")
 	var req addTeacherRequest
 	if err := ctx.ShouldBindJSON(&req); err != nil {

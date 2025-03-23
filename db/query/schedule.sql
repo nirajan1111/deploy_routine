@@ -4,9 +4,10 @@ INSERT INTO schedules (
   room_id,
   subject_id,
   teacher_email,
-  time_slot
+  time_slot,
+  year
 ) VALUES (
-  $1, $2, $3, $4, $5
+  $1, $2, $3, $4, $5, $6
 ) RETURNING *;
 
 -- name: GetSchedule :one
@@ -37,6 +38,7 @@ WHERE id = $1;
 -- name: GetSchedulesByTeacher :many
 SELECT s.*, 
   t.name AS teacher_name,
+  t.designation AS teacher_designation,
   r.room_code,
   r.block_no,
   sub.subject_code,
@@ -47,12 +49,13 @@ JOIN teacher t ON s.teacher_email = t.email
 JOIN room r ON s.room_id = r.id
 JOIN subject sub ON s.subject_id = sub.id
 JOIN student_section ss ON s.group_id = ss.id
-WHERE s.teacher_email = $1
+WHERE s.teacher_email = $1 AND s.year = $2
 ORDER BY s.time_slot;
 
 -- name: GetSchedulesByRoom :many
 SELECT s.*, 
   t.name AS teacher_name,
+  t.designation AS teacher_designation,
   r.room_code,
   r.block_no,
   sub.subject_code,
@@ -63,12 +66,13 @@ JOIN teacher t ON s.teacher_email = t.email
 JOIN room r ON s.room_id = r.id
 JOIN subject sub ON s.subject_id = sub.id
 JOIN student_section ss ON s.group_id = ss.id
-WHERE s.room_id = $1
+WHERE s.room_id = $1 AND s.year = $2
 ORDER BY s.time_slot;
 
 -- name: GetSchedulesByGroup :many
 SELECT s.*, 
   t.name AS teacher_name,
+  t.designation AS teacher_designation,
   r.room_code,
   r.block_no,
   sub.subject_code,
@@ -79,7 +83,7 @@ JOIN teacher t ON s.teacher_email = t.email
 JOIN room r ON s.room_id = r.id
 JOIN subject sub ON s.subject_id = sub.id
 JOIN student_section ss ON s.group_id = ss.id
-WHERE s.group_id = $1
+WHERE s.group_id = $1 AND s.year = $2
 ORDER BY s.time_slot;
 
 -- name: CountSchedules :one
@@ -94,3 +98,10 @@ SELECT EXISTS (
     group_id = $4
   )
 ) AS conflict_exists;
+
+-- name: numberofDistinctYears :one
+SELECT COUNT(DISTINCT year) FROM schedules;
+
+-- name: GetDistinctYears :many
+SELECT DISTINCT year FROM schedules
+ORDER BY year;

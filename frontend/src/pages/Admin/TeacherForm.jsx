@@ -65,7 +65,7 @@ const TeacherForm = ({ teacher, onSubmit, onCancel }) => {
               name="name"
               value={formData.name}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
+              className={`w-full  bg-white  px-3 py-2 border rounded-md ${errors.name ? 'border-red-500' : 'border-gray-300'}`}
               placeholder="Enter teacher name"
             />
             {errors.name && <p className="mt-1 text-sm text-red-500">{errors.name}</p>}
@@ -80,7 +80,7 @@ const TeacherForm = ({ teacher, onSubmit, onCancel }) => {
               name="email"
               value={formData.email}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
+              className={`w-full bg-white  px-3 py-2 border rounded-md ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
               placeholder="Enter email address"
               disabled={!!teacher} // Disable email editing for existing teachers
             />
@@ -95,16 +95,11 @@ const TeacherForm = ({ teacher, onSubmit, onCancel }) => {
               name="department"
               value={formData.department}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${errors.department ? 'border-red-500' : 'border-gray-300'}`}
+              className={`w-full px-3  bg-white  py-2 border rounded-md ${errors.department ? 'border-red-500' : 'border-gray-300'}`}
             >
               <option value="">Select Department</option>
-              <option value="Computer Science">Computer Science</option>
-              <option value="Mathematics">Mathematics</option>
-              <option value="Physics">Physics</option>
-              <option value="Chemistry">Chemistry</option>
-              <option value="Biology">Biology</option>
-              <option value="Engineering">Engineering</option>
-              <option value="Arts">Arts</option>
+              <option value="DOECE">Department of Electronics and Computer Engineering</option>
+           
             </select>
             {errors.department && <p className="mt-1 text-sm text-red-500">{errors.department}</p>}
           </div>
@@ -117,7 +112,7 @@ const TeacherForm = ({ teacher, onSubmit, onCancel }) => {
               name="designation"
               value={formData.designation}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-md ${errors.designation ? 'border-red-500' : 'border-gray-300'}`}
+              className={`w-full bg-white  px-3 py-2 border rounded-md ${errors.designation ? 'border-red-500' : 'border-gray-300'}`}
             >
               <option value="">Select Designation</option>
               <option value="Professor">Professor</option>
