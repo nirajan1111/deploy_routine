@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -46,6 +47,9 @@ func NewServer(store *db.Store, accessTokenSymmetricKey string, accessTokenDurat
 	server.router = router
 	return server, nil
 }
+func headRooms(c *gin.Context) {
+	c.Status(http.StatusOK) // 200 OK without a body
+}
 
 func (server *Server) setRouter(router *gin.Engine) {
 	router.GET("/ping", func(ctx *gin.Context) {
@@ -53,6 +57,7 @@ func (server *Server) setRouter(router *gin.Engine) {
 	})
 	router.POST("/users/login", server.loginUser)
 	router.POST("/users", server.createUser)
+	router.HEAD("/", headRooms)
 	authRoutes := router.Group("/").Use(AuthMiddleware(server.tokenMaker))
 	authRoutes.GET("/users/:email", server.getUser)
 	authRoutes.GET("/users", server.listUsers)
